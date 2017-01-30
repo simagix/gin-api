@@ -22,7 +22,7 @@ Gin API server template
 
 ### Usage
 ```
-Usage of /osca-api-server:
+Usage of /gin-api:
   -logfile string
     	a string
   -version

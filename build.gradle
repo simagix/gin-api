@@ -1,0 +1,78 @@
+
+plugins {
+	id 'nebula.ospackage' version '3.4.0'
+	id "org.ajoberstar.github-pages" version "1.4.2-rc.1"
+}
+
+repositories {
+jcenter()
+}
+
+ext {
+	path = files('/usr/local/go/bin', '/usr/bin', '/c/go/bin')
+	appVersion = '0.1.0'
+	git = org.ajoberstar.grgit.Grgit.open(file('.'))
+	commitId = git.head().id
+}
+
+ospackage {
+    permissionGroup = 'simagix'
+    user = 'simagix'
+	from('build') {
+		include 'gin-api'
+		into '/usr/bin'
+	}
+}
+
+def getDate() {
+	def now = new Date()
+	return now.format('yyyyMMddHHmmss')
+}
+
+task assembleRPM (type: Rpm) {
+	epoch = System.currentTimeMillis()/1000
+	packageName = 'gin-api'
+	version = appVersion+'_'+getDate()+'_'+commitId
+	release = '1'
+	arch = 'x86_64'
+	os = 'linux'
+	println project.buildDir
+}
+
+task buildLinux {
+	def pwd = new File(".").absolutePath
+    doLast {
+		exec {
+            environment "GOOS", "linux"
+            environment "GOARCH", "amd64"
+			executable "go"
+			args "get", "gopkg.in/mgo.v2", "gopkg.in/gin-gonic/gin.v1", "github.com/bitly/go-simplejson"
+		}
+		exec {
+            environment "GOOS", "linux"
+            environment "GOARCH", "amd64"
+			executable "go"
+			args "build", "-o", "build/gin-api"
+		}
+        assembleRPM.execute()
+    }
+}
+
+task buildDefault {
+	def pwd = new File(".").absolutePath
+    doLast {
+		exec {
+			executable "go"
+			args "get", "gopkg.in/mgo.v2", "gopkg.in/gin-gonic/gin.v1", "github.com/bitly/go-simplejson"
+		}
+		exec {
+			executable "go"
+			args "build", "-o", "build/gin-api"
+		}
+        assembleRPM.execute()
+    }
+}
+
+build {
+	dependsOn 'buildLinux'
+}
